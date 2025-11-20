@@ -1,3 +1,5 @@
+Always refer to the project_roadmap_file (./clicker2.md) and sections in it before considering further the decisions you will make upon my prompts. Keep this file as project roadmap.
+
 # Project: Clicker2
 
 ## Project Overview
