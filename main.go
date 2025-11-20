@@ -19,22 +19,58 @@ const (
 
 // Game implements ebiten.Game interface.
 type Game struct {
-	state     *game.Game
-	rockImage *ebiten.Image
-	rockPos   image.Point
+	state         *game.Game
+	rockImage     *ebiten.Image
+	rockPos       image.Point
+	upgradeButton image.Rectangle
 }
 
 // Update proceeds the game state.
 // Update is called every tick (1/60 second).
 func (g *Game) Update() error {
+	// Handle input
+	g.handleInput()
+
+	return nil
+}
+
+func (g *Game) handleInput() {
+	// Mouse clicks
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		x, y := ebiten.CursorPosition()
+		cursorPoint := image.Point{X: x, Y: y}
+
+		// Check for rock click
 		rockBounds := image.Rectangle{Min: g.rockPos, Max: g.rockPos.Add(g.rockImage.Bounds().Size())}
-		if (image.Point{X: x, Y: y}).In(rockBounds) {
+		if cursorPoint.In(rockBounds) {
 			g.state.Click()
+			return
+		}
+
+		// Check for upgrade click
+		if cursorPoint.In(g.upgradeButton) {
+			g.state.UpgradeDamage()
+			return
 		}
 	}
-	return nil
+
+	// Save game
+	if inpututil.IsKeyJustPressed(ebiten.KeyS) {
+		if err := g.state.Save(); err != nil {
+			log.Printf("Error saving game: %v", err)
+		} else {
+			log.Println("Game saved!")
+		}
+	}
+
+	// Load game
+	if inpututil.IsKeyJustPressed(ebiten.KeyL) {
+		if err := g.state.Load(); err != nil {
+			log.Printf("Error loading game: %v", err)
+		} else {
+			log.Println("Game loaded!")
+		}
+	}
 }
 
 // Draw draws the game screen.
@@ -45,9 +81,33 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	op.GeoM.Translate(float64(g.rockPos.X), float64(g.rockPos.Y))
 	screen.DrawImage(g.rockImage, op)
 
+	// Draw the health bar
+	g.drawHealthBar(screen)
+
+	// Draw the upgrade button
+	ebitenutil.DrawRect(screen, float64(g.upgradeButton.Min.X), float64(g.upgradeButton.Min.Y), float64(g.upgradeButton.Dx()), float64(g.upgradeButton.Dy()), color.RGBA{R: 100, G: 100, B: 100, A: 255})
+
 	// Draw the stats
-	msg := fmt.Sprintf("Rock Health: %d\nDust: %d", g.state.TheRock.Health, g.state.ThePlayer.Dust)
+	msg := fmt.Sprintf("Rock Health: %d\nDust: %d\nDamage: %d\nUpgrade Cost: %d", g.state.TheRock.Health, g.state.ThePlayer.Dust, g.state.ThePlayer.Damage, game.UpgradeCost)
 	ebitenutil.DebugPrint(screen, msg)
+}
+
+func (g *Game) drawHealthBar(screen *ebiten.Image) {
+	barWidth := 100.0
+	barHeight := 10.0
+	barX := float64(g.rockPos.X) - (barWidth-float64(g.rockImage.Bounds().Dx()))/2
+	barY := float64(g.rockPos.Y) - barHeight - 5 // 5 pixels above the rock
+
+	healthPercentage := float64(g.state.TheRock.Health) / float64(game.InitialRockHealth)
+	if healthPercentage < 0 {
+		healthPercentage = 0
+	}
+
+	// Draw health bar background
+	ebitenutil.DrawRect(screen, barX, barY, barWidth, barHeight, color.RGBA{R: 255, G: 0, B: 0, A: 255})
+
+	// Draw health bar foreground
+	ebitenutil.DrawRect(screen, barX, barY, barWidth*healthPercentage, barHeight, color.RGBA{R: 0, G: 255, B: 0, A: 255})
 }
 
 // Layout takes the outside size (e.g., the window size) and returns the (logical) screen size.
@@ -67,10 +127,16 @@ func main() {
 	rockX := screenWidth/2 - rockW/2
 	rockY := screenHeight/2 - rockH/2
 
+	// Define upgrade button
+	buttonWidth := 150
+	buttonHeight := 30
+	upgradeButton := image.Rect(10, screenHeight-buttonHeight-10, 10+buttonWidth, screenHeight-10)
+
 	game := &Game{
-		state:     game.NewGame(),
-		rockImage: rockImage,
-		rockPos:   image.Point{X: rockX, Y: rockY},
+		state:         game.NewGame(),
+		rockImage:     rockImage,
+		rockPos:       image.Point{X: rockX, Y: rockY},
+		upgradeButton: upgradeButton,
 	}
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)
