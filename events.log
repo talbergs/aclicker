@@ -1,0 +1,15 @@
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":10000000,"RockHealthAfter":9999999,"PlayerDustBefore":0,"PlayerDustAfter":1}}
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":9999999,"RockHealthAfter":9999998,"PlayerDustBefore":1,"PlayerDustAfter":2}}
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":9999998,"RockHealthAfter":9999997,"PlayerDustBefore":2,"PlayerDustAfter":3}}
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":9999997,"RockHealthAfter":9999996,"PlayerDustBefore":3,"PlayerDustAfter":4}}
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":9999996,"RockHealthAfter":9999995,"PlayerDustBefore":4,"PlayerDustAfter":5}}
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":9999995,"RockHealthAfter":9999994,"PlayerDustBefore":5,"PlayerDustAfter":6}}
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":9999994,"RockHealthAfter":9999993,"PlayerDustBefore":6,"PlayerDustAfter":7}}
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":9999993,"RockHealthAfter":9999992,"PlayerDustBefore":7,"PlayerDustAfter":8}}
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":9999992,"RockHealthAfter":9999991,"PlayerDustBefore":8,"PlayerDustAfter":9}}
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":9999991,"RockHealthAfter":9999990,"PlayerDustBefore":9,"PlayerDustAfter":10}}
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":9999990,"RockHealthAfter":9999989,"PlayerDustBefore":10,"PlayerDustAfter":11}}
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":9999989,"RockHealthAfter":9999988,"PlayerDustBefore":11,"PlayerDustAfter":12}}
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":9999988,"RockHealthAfter":9999987,"PlayerDustBefore":12,"PlayerDustAfter":13}}
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":9999987,"RockHealthAfter":9999986,"PlayerDustBefore":13,"PlayerDustAfter":14}}
+{"type":"Click","data":{"PlayerID":"player1","DamageDealt":1,"DustGained":1,"RockHealthBefore":9999986,"RockHealthAfter":9999985,"PlayerDustBefore":14,"PlayerDustAfter":15}}
