@@ -40,8 +40,8 @@ func (h *HUD) Draw(screen *ebiten.Image, rockHealth, playerDust, playerDamage, u
 func (h *HUD) DrawHealthBar(screen *ebiten.Image, rockPos image.Point, rockImage *ebiten.Image, currentRockHealth, initialRockHealth int) {
 	barWidth := 100.0
 	barHeight := 10.0
-	barX := float64(rockPos.X) - (barWidth-float64(rockImage.Bounds().Dx()))/2
-	barY := float64(rockPos.Y) - barHeight - 5 // 5 pixels above the rock
+	barX := float64(rockPos.X) / 2
+	barY := float64(rockPos.Y) / 2
 
 	healthPercentage := float64(currentRockHealth) / float64(initialRockHealth)
 	if healthPercentage < 0 {

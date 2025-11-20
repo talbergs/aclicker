@@ -16,14 +16,14 @@
 | (game/game.go)    |         | (shaders/*.go)    |
 |-------------------|         |-------------------|
 | - Rock struct     |         | - ShaderEffect    |
-| - Player struct   |         | - Grayscale()     |
-| - Game struct     |         | - Invert()        |
-| - Warp()          |         | - Apply()         |
-| - NewGame()       |         +---------^---------+
-| - Click()         |                   |
-| - UpgradeDamage() |                   | Uses
+| - Player struct   |         | - Game struct     |
+| - EventDispatcher |         | - Grayscale()     |
+| - NewGame()       |         | - Invert()        |
+| - Click()         |         | - Warp()          |
+| - UpgradeDamage() |         | - Apply()         |
+| - ApplyDamageUpEvent()|     +---------^---------+
 | - Save()          |                   |
-| - Load()          |                   |
+| - Load()          |                   | Uses
 +---------^---------+                   |
           |                             |
           | Uses                        |
@@ -37,4 +37,20 @@
 | - Draw()                            |
 | - DrawHealthBar()                   |
 +-------------------------------------+
+          ^
+          |
+          | Uses
+          |
++---------+---------+
+|       game/events |
+| (game/events.go)  |
+|-------------------|
+| - Event interface |
+| - DamageUpgradedEvent |
+| - EventHandler    |
+| - EventDispatcher |
+| - NewEventDispatcher()|
+| - Register()      |
+| - Dispatch()      |
++-------------------+
 ```
