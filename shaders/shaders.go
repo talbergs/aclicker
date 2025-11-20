@@ -16,10 +16,18 @@ var invertSrc []byte
 //go:embed warp.kage
 var warpSrc []byte
 
+//go:embed clickheat.kage
+var clickHeatSrc []byte
+
+//go:embed timeclick.kage
+var timeClickSrc []byte
+
 var (
 	GrayscaleShader *ebiten.Shader
 	InvertShader    *ebiten.Shader
 	WarpShader      *ebiten.Shader
+	ClickHeatShader *ebiten.Shader
+	TimeClickShader *ebiten.Shader
 )
 
 func init() {
@@ -35,6 +43,16 @@ func init() {
 	}
 
 	WarpShader, err = ebiten.NewShader(warpSrc)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ClickHeatShader, err = ebiten.NewShader(clickHeatSrc)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	TimeClickShader, err = ebiten.NewShader(timeClickSrc)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -56,6 +74,21 @@ func Warp(time float32) ShaderEffect {
 		Shader: WarpShader,
 		Uniforms: map[string]interface{}{
 			"Time": time,
+		},
+	}
+}
+
+// ClickHeat returns a ShaderEffect for the click heat shader.
+func ClickHeat() ShaderEffect {
+	return ShaderEffect{Shader: ClickHeatShader}
+}
+
+// TimeClick returns a ShaderEffect for the time-click shader.
+func TimeClick(time float32) ShaderEffect {
+	return ShaderEffect{
+		Shader: TimeClickShader,
+		Uniforms: map[string]interface{}{
+			"Time":   time,
 		},
 	}
 }

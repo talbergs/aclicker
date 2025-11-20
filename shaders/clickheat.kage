@@ -1,0 +1,17 @@
+//kage:entrypoint Fragment
+
+package main
+
+// image0 is the source image (rock)
+// image1 is the click heat texture (ClickGridTexture)
+
+func Fragment(position vec4, texelCoord vec2, color vec4) vec4 {
+	srcColor := imageSrc0At(texelCoord)
+	clickHeatColor := imageSrc1At(texelCoord)
+
+	// Overlay the red channel of the click heat onto the source image
+	// You can adjust the blending mode and intensity as needed
+	srcColor.r = min(srcColor.r + clickHeatColor.r, 1.0) // Add red channel, clamp to 1.0
+
+	return srcColor
+}

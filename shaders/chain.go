@@ -9,7 +9,7 @@ type ShaderEffect struct {
 }
 
 // Apply applies a chain of shader effects to a source image.
-func Apply(source *ebiten.Image, effects ...ShaderEffect) *ebiten.Image {
+func Apply(source *ebiten.Image, clickGridTexture *ebiten.Image, effects ...ShaderEffect) *ebiten.Image {
 	if len(effects) == 0 {
 		return source
 	}
@@ -32,7 +32,7 @@ func Apply(source *ebiten.Image, effects ...ShaderEffect) *ebiten.Image {
 
 		dst.Clear()
 		dst.DrawRectShader(source.Bounds().Dx(), source.Bounds().Dy(), effect.Shader, &ebiten.DrawRectShaderOptions{
-			Images:   [4]*ebiten.Image{src},
+			Images:   [4]*ebiten.Image{src, clickGridTexture}, // Pass clickGridTexture as the second image
 			Uniforms: effect.Uniforms,
 		})
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"clicker2/game"
 	"clicker2/game/hud"
+	"clicker2/game/clickanalysis"
 	"clicker2/shaders"
 	"image"
 	"image/color"
@@ -21,10 +22,13 @@ const (
 type EbitenGame struct {
 	state          *game.Game
 	hud            *hud.HUD
+	clickGrid      *clickanalysis.ClickGrid
 	rockImage      *ebiten.Image
 	rockPos        image.Point
 	shadersEnabled bool
 	time           float32
+	lastMouseX     float32
+	lastMouseY     float32
 }
 
 // Update proceeds the game state.
@@ -42,6 +46,9 @@ func (g *EbitenGame) Update() error {
 	// Increment time for warp shader
 	g.time++
 
+	// Update click grid heat decay
+	g.clickGrid.Update()
+
 	return nil
 }
 
@@ -55,6 +62,9 @@ func (g *EbitenGame) handleInput() {
 		rockBounds := image.Rectangle{Min: g.rockPos, Max: g.rockPos.Add(g.rockImage.Bounds().Size())}
 		if cursorPoint.In(rockBounds) {
 			g.state.Click()
+			g.clickGrid.AddClick(cursorPoint.X, cursorPoint.Y, screenWidth, screenHeight)
+			g.lastMouseX = float32(cursorPoint.X) / float32(screenWidth)
+			g.lastMouseY = float32(cursorPoint.Y) / float32(screenHeight)
 			return
 		}
 
@@ -94,10 +104,12 @@ func (g *EbitenGame) handleInput() {
 func (g *EbitenGame) Draw(screen *ebiten.Image) {
 	var finalImage *ebiten.Image
 	if g.shadersEnabled {
-		finalImage = shaders.Apply(g.rockImage,
-			shaders.Grayscale(),
-			shaders.Invert(),
-			shaders.Warp(g.time/60.0),
+		clickGridEbitenImage := ebiten.NewImageFromImage(g.clickGrid.ToRGBA())
+		finalImage = shaders.Apply(g.rockImage, clickGridEbitenImage,
+			// shaders.Grayscale(),
+			// shaders.Invert(),
+			// shaders.Warp(g.time/60.0),
+			shaders.TimeClick(g.time/60.0),
 		)
 	} else {
 		finalImage = g.rockImage
@@ -124,7 +136,7 @@ func (g *EbitenGame) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 func main() {
 	// Create a placeholder rock image
-	rockImage := ebiten.NewImage(32, 32)
+	rockImage := ebiten.NewImage(128, 128)
 	rockImage.Fill(color.RGBA{R: 139, G: 69, B: 19, A: 255}) // SaddleBrown
 
 	// Center the rock
@@ -135,12 +147,16 @@ func main() {
 	// Initialize HUD
 	gameHUD := hud.NewHUD(screenWidth, screenHeight)
 
+	// Initialize ClickGrid
+	clickGrid := clickanalysis.NewClickGrid(rockW, rockH)
+
 	game := &EbitenGame{
 		state:          game.NewGame(),
 		hud:            gameHUD,
+		clickGrid:      clickGrid,
 		rockImage:      rockImage,
 		rockPos:        image.Point{X: rockX, Y: rockY},
-		shadersEnabled: false,
+		shadersEnabled: true,
 	}
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)

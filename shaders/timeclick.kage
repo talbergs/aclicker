@@ -1,0 +1,24 @@
+//kage:entrypoint Fragment
+
+package main
+
+// image0 is the source image (rock)
+// image1 is the click heat texture (ClickGridTexture)
+
+func Fragment(position vec4, texelCoord vec2, color vec4, Time vec4) vec4 {
+	srcColor := imageSrc0At(texelCoord)
+	clickHeatColor := imageSrc1At(texelCoord)
+
+	// Extract float values from vec4 uniforms
+	time := Time.x
+
+	// Combine click heat with time-based animation
+	// For example, make the click heat pulsate with time
+	pulsate := sin(time * 0.1) * 0.5 + 0.5 // Value between 0.0 and 1.0
+	animatedClickHeat := clickHeatColor.r * pulsate
+
+	// Apply the combined effect to the red channel
+	finalRed := min(srcColor.r + animatedClickHeat, 1.0) // Add all effects, clamp to 1.0
+
+	return vec4(finalRed, srcColor.g, srcColor.b, srcColor.a)
+}
