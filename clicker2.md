@@ -36,3 +36,8 @@ Game design - events driven.
 -- user stats update (an action example, were event is sourced from 2 past events)
 --- user clicked stone for 10 times in past second
 - audio stream is also passed inbetween shaders
+
+Developer experience:
+- fast tests fast feedback loop
+- game tests are fully without any UI
+- ./run.sh and ./build.sh scripts given
