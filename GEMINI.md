@@ -9,6 +9,13 @@ This project is a dark genre clicker game, as outlined in `clicker2.md`. The cor
 *   **Main Technologies:** Go, a 2D graphics library (unspecified), and GLSL shaders.
 *   **Architecture:** The game uses an event-driven architecture. The core game logic and rules are to be encapsulated in a separate Go package to maintain clear boundaries.
 
+## Next Steps (as of 2025-11-20)
+
+1.  **Define Core Game State:** Define `Game`, `Rock`, and `Player` structs in the `game` package.
+2.  **Load and Draw the Rock:** Create a placeholder `sprites.png` and draw the rock in the game window.
+3.  **Implement Click Detection:** Detect mouse clicks on the rock sprite.
+4.  **Create the Core "Click" Logic:** Decrease rock health and increase player dust on click.
+
 ## Building and Running
 
 The project roadmap in `clicker2.md` does not specify the build and run commands. Assuming a standard Go project structure, the following commands are likely to be used.
@@ -17,10 +24,10 @@ The project roadmap in `clicker2.md` does not specify the build and run commands
 
 ```bash
 # Build the project
-go build -o clicker2 .
+./build.sh
 
 # Run the game
-./clicker2
+./run.sh
 
 # Run tests (once tests are added)
 go test ./...
