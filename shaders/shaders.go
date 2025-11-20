@@ -39,3 +39,23 @@ func init() {
 		log.Fatal(err)
 	}
 }
+
+// Grayscale returns a ShaderEffect for the grayscale shader.
+func Grayscale() ShaderEffect {
+	return ShaderEffect{Shader: GrayscaleShader}
+}
+
+// Invert returns a ShaderEffect for the invert shader.
+func Invert() ShaderEffect {
+	return ShaderEffect{Shader: InvertShader}
+}
+
+// Warp returns a ShaderEffect for the warp shader.
+func Warp(time float32) ShaderEffect {
+	return ShaderEffect{
+		Shader: WarpShader,
+		Uniforms: map[string]interface{}{
+			"Time": time,
+		},
+	}
+}
