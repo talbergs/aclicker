@@ -1,0 +1,11 @@
+//kage:entrypoint Fragment
+
+package main
+
+var Time float
+
+func Fragment(position vec4, texelCoord vec2, color vec4) vec4 {
+	x := texelCoord.x + sin(texelCoord.y*16.0+Time*2.0)*0.1
+	y := texelCoord.y + cos(texelCoord.x*16.0+Time*2.0)*0.1
+	return imageSrc0At(vec2(x, y))
+}

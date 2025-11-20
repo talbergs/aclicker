@@ -1,0 +1,10 @@
+//kage:entrypoint Fragment
+
+package main
+
+func Fragment(position vec4, texelCoord vec2, color vec4) vec4 {
+	c := imageSrc0At(texelCoord)
+	// Use standard luminance calculation
+	lum := 0.299*c.r + 0.587*c.g + 0.114*c.b
+	return vec4(lum, lum, lum, c.a)
+}

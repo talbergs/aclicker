@@ -1,0 +1,8 @@
+//kage:entrypoint Fragment
+
+package main
+
+func Fragment(position vec4, texelCoord vec2, color vec4) vec4 {
+	c := imageSrc0At(texelCoord)
+	return vec4(1.0 - c.r, 1.0 - c.g, 1.0 - c.b, c.a)
+}

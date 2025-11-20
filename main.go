@@ -2,6 +2,7 @@ package main
 
 import (
 	"clicker2/game"
+	"clicker2/shaders"
 	"fmt"
 	"image"
 	"image/color"
@@ -19,10 +20,14 @@ const (
 
 // Game implements ebiten.Game interface.
 type Game struct {
-	state         *game.Game
-	rockImage     *ebiten.Image
-	rockPos       image.Point
-	upgradeButton image.Rectangle
+	state          *game.Game
+	rockImage      *ebiten.Image
+	offscreen1     *ebiten.Image // For shader chaining
+	offscreen2     *ebiten.Image // For shader chaining
+	rockPos        image.Point
+	upgradeButton  image.Rectangle
+	shadersEnabled bool
+	time           float32
 }
 
 // Update proceeds the game state.
@@ -30,6 +35,9 @@ type Game struct {
 func (g *Game) Update() error {
 	// Handle input
 	g.handleInput()
+
+	// Increment time for warp shader
+	g.time++
 
 	return nil
 }
@@ -71,15 +79,53 @@ func (g *Game) handleInput() {
 			log.Println("Game loaded!")
 		}
 	}
+
+	// Toggle shaders
+	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+		g.shadersEnabled = !g.shadersEnabled
+	}
 }
 
 // Draw draws the game screen.
 // Draw is called every frame (typically 1/60 second).
 func (g *Game) Draw(screen *ebiten.Image) {
-	// Draw the rock
+	// Draw the rock to an offscreen image
+	g.offscreen1.Clear()
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(g.rockPos.X), float64(g.rockPos.Y))
-	screen.DrawImage(g.rockImage, op)
+	g.offscreen1.DrawImage(g.rockImage, op)
+
+	var finalImage *ebiten.Image
+	if g.shadersEnabled {
+		// 1. Grayscale
+		g.offscreen2.Clear()
+		g.offscreen2.DrawRectShader(g.rockImage.Bounds().Dx(), g.rockImage.Bounds().Dy(), shaders.GrayscaleShader, &ebiten.DrawRectShaderOptions{
+			Images: [4]*ebiten.Image{g.offscreen1},
+		})
+
+		// 2. Invert
+		g.offscreen1.Clear()
+		g.offscreen1.DrawRectShader(g.rockImage.Bounds().Dx(), g.rockImage.Bounds().Dy(), shaders.InvertShader, &ebiten.DrawRectShaderOptions{
+			Images: [4]*ebiten.Image{g.offscreen2},
+		})
+
+		// 3. Warp
+		g.offscreen2.Clear()
+		g.offscreen2.DrawRectShader(g.rockImage.Bounds().Dx(), g.rockImage.Bounds().Dy(), shaders.WarpShader, &ebiten.DrawRectShaderOptions{
+			Images: [4]*ebiten.Image{g.offscreen1},
+			Uniforms: map[string]interface{}{
+				"Time": g.time / 60.0, // Convert ticks to seconds
+			},
+		})
+		finalImage = g.offscreen2
+	} else {
+		finalImage = g.offscreen1
+	}
+
+	// Draw the final rock image to the screen
+	finalOp := &ebiten.DrawImageOptions{}
+	finalOp.GeoM.Translate(float64(g.rockPos.X), float64(g.rockPos.Y))
+	screen.DrawImage(finalImage, finalOp)
+
 
 	// Draw the health bar
 	g.drawHealthBar(screen)
@@ -88,7 +134,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	ebitenutil.DrawRect(screen, float64(g.upgradeButton.Min.X), float64(g.upgradeButton.Min.Y), float64(g.upgradeButton.Dx()), float64(g.upgradeButton.Dy()), color.RGBA{R: 100, G: 100, B: 100, A: 255})
 
 	// Draw the stats
-	msg := fmt.Sprintf("Rock Health: %d\nDust: %d\nDamage: %d\nUpgrade Cost: %d", g.state.TheRock.Health, g.state.ThePlayer.Dust, g.state.ThePlayer.Damage, game.UpgradeCost)
+	msg := fmt.Sprintf("Rock Health: %d\nDust: %d\nDamage: %d\nUpgrade Cost: %d\nShaders: %t (Space)", g.state.TheRock.Health, g.state.ThePlayer.Dust, g.state.ThePlayer.Damage, game.UpgradeCost, g.shadersEnabled)
 	ebitenutil.DebugPrint(screen, msg)
 }
 
@@ -120,6 +166,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 func main() {
 	// Create a placeholder rock image
 	rockImage := ebiten.NewImage(32, 32)
+	
 	rockImage.Fill(color.RGBA{R: 139, G: 69, B: 19, A: 255}) // SaddleBrown
 
 	// Center the rock
@@ -133,10 +180,13 @@ func main() {
 	upgradeButton := image.Rect(10, screenHeight-buttonHeight-10, 10+buttonWidth, screenHeight-10)
 
 	game := &Game{
-		state:         game.NewGame(),
-		rockImage:     rockImage,
-		rockPos:       image.Point{X: rockX, Y: rockY},
-		upgradeButton: upgradeButton,
+		state:          game.NewGame(),
+		rockImage:      rockImage,
+		offscreen1:     ebiten.NewImage(rockImage.Size()),
+		offscreen2:     ebiten.NewImage(rockImage.Size()),
+		rockPos:        image.Point{X: rockX, Y: rockY},
+		upgradeButton:  upgradeButton,
+		shadersEnabled: false,
 	}
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)
