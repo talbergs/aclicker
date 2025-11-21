@@ -26,7 +26,8 @@ func init() {
 	SpriteSheet = ebiten.NewImageFromImage(img)
 
 	// Estimated coordinates from the image
-	rockRect := image.Rect(150, 40, 240, 100)
+	rockRect := image.Rect(700, 1000, 240, 600)
+	!dbg(image.ZR.Size())
 	RockSprite = SpriteSheet.SubImage(rockRect).(*ebiten.Image)
 
 	marketplaceRect := image.Rect(20, 20, 120, 120)
