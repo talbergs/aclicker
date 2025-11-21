@@ -1,12 +1,12 @@
 package main
 
 import (
+	"clicker2/assets"
 	"clicker2/game"
 	"clicker2/game/clickanalysis"
 	"clicker2/game/hud"
 	"clicker2/shaders"
 	"image"
-	"image/color"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -20,15 +20,19 @@ const (
 
 // EbitenGame implements ebiten.Game interface.
 type EbitenGame struct {
-	state          *game.Game
-	hud            *hud.HUD
-	clickGrid      *clickanalysis.ClickGrid
-	rockImage      *ebiten.Image
-	rockPos        image.Point
-	shadersEnabled bool
-	time           float32
-	lastMouseX     float32
-	lastMouseY     float32
+	state             *game.Game
+	hud               *hud.HUD
+	clickGrid         *clickanalysis.ClickGrid
+	rockImage         *ebiten.Image
+	rockPos           image.Point
+	marketplaceImage  *ebiten.Image
+	marketplacePos    image.Point
+	shadersEnabled    bool
+	time              float32
+	lastMouseX        float32
+	lastMouseY        float32
+	clickSpeed        float32
+	lastClickPos      image.Point
 }
 
 // Update proceeds the game state.
@@ -49,6 +53,8 @@ func (g *EbitenGame) Update() error {
 	// Update click grid heat decay
 	g.clickGrid.Update()
 
+	g.clickSpeed *= 0.95
+
 	return nil
 }
 
@@ -57,6 +63,8 @@ func (g *EbitenGame) handleInput() {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		x, y := ebiten.CursorPosition()
 		cursorPoint := image.Point{X: x, Y: y}
+		g.lastClickPos = cursorPoint
+		g.clickSpeed += 0.5
 
 		// Check for rock click
 		rockBounds := image.Rectangle{Min: g.rockPos, Max: g.rockPos.Add(g.rockImage.Bounds().Size())}
@@ -107,13 +115,20 @@ func (g *EbitenGame) Draw(screen *ebiten.Image) {
 		x, y := ebiten.CursorPosition()
 		op := &ebiten.DrawRectShaderOptions{
 			Uniforms: map[string]interface{}{
-				"Time":       g.time / 60.0,
-				"Resolution": []float32{screenWidth, screenHeight},
-				"Mouse":      []float32{float32(x), float32(y)},
+				"Time":         g.time / 60.0,
+				"Resolution":   []float32{screenWidth, screenHeight},
+				"Mouse":        []float32{float32(x), float32(y)},
+				"ClickSpeed":   g.clickSpeed,
+				"LastClickPos": []float32{float32(g.lastClickPos.X), float32(g.lastClickPos.Y)},
 			},
 		}
 		screen.DrawRectShader(screenWidth, screenHeight, shaders.DesertShader, op)
 	}
+
+	// Draw the marketplace
+	opMarketplace := &ebiten.DrawImageOptions{}
+	opMarketplace.GeoM.Translate(float64(g.marketplacePos.X), float64(g.marketplacePos.Y))
+	screen.DrawImage(g.marketplaceImage, opMarketplace)
 
 	var finalImage *ebiten.Image
 	if g.shadersEnabled {
@@ -148,14 +163,14 @@ func (g *EbitenGame) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
-	// Create a placeholder rock image
-	rockImage := ebiten.NewImage(128, 128)
-	rockImage.Fill(color.RGBA{R: 139, G: 69, B: 19, A: 255}) // SaddleBrown
-
 	// Center the rock
-	rockW, rockH := rockImage.Size()
+	rockW, rockH := assets.RockSprite.Size()
 	rockX := screenWidth/2 - rockW/2
 	rockY := screenHeight/2 - rockH/2
+
+	// Position the marketplace
+	marketplaceX := 50
+	marketplaceY := screenHeight/2 - 128/2
 
 	// Initialize HUD
 	gameHUD := hud.NewHUD(screenWidth, screenHeight)
@@ -164,12 +179,16 @@ func main() {
 	clickGrid := clickanalysis.NewClickGrid(rockW, rockH)
 
 	game := &EbitenGame{
-		state:          game.NewGame(),
-		hud:            gameHUD,
-		clickGrid:      clickGrid,
-		rockImage:      rockImage,
-		rockPos:        image.Point{X: rockX, Y: rockY},
-		shadersEnabled: true,
+		state:             game.NewGame(),
+		hud:               gameHUD,
+		clickGrid:         clickGrid,
+		rockImage:         assets.RockSprite,
+		rockPos:           image.Point{X: rockX, Y: rockY},
+		marketplaceImage:  assets.MarketplaceSprite,
+		marketplacePos:    image.Point{X: marketplaceX, Y: marketplaceY},
+		shadersEnabled:    true,
+		clickSpeed:        0.0,
+		lastClickPos:      image.Point{X: 0, Y: 0},
 	}
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)

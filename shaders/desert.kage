@@ -4,6 +4,8 @@ package main
 var Time float
 var Resolution vec2
 var Mouse vec2
+var ClickSpeed float
+var LastClickPos vec2
 
 func rand(n vec2) float {
     return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453)
@@ -36,17 +38,25 @@ func Fragment(pos vec4, tex vec2, col vec4) vec4 {
     c6 := vec3(0.9)
 
     speed := vec2(0.1, 0.9)
+    
+    time := Time / (1.0 + ClickSpeed)
+
     shift := 1.327+Mouse.x/100.0
 
     uv := pos.xy / Resolution.xy
     
-    v := fbm(uv + Time * 0.1 + shift)
+    distToClick := distance(pos.xy, LastClickPos)
+    influence := 1.0 - smoothstep(0.0, 200.0, distToClick)
+    uv_offset := vec2(influence * 0.1, 0.0)
+    uv += uv_offset
+
+    v := fbm(uv + time * 0.1 + shift)
     
     c := mix(c1, c2, v)
-    c = mix(c, c3, fbm(uv + Time * speed + v))
-    c = mix(c, c4, fbm(uv + Time * speed * 2.0 + v))
-    c = mix(c, c5, fbm(uv + Time * speed * 4.0 + v))
-    c = mix(c, c6, fbm(uv + Time * speed * 8.0 + v))
+    c = mix(c, c3, fbm(uv + time * speed + v))
+    c = mix(c, c4, fbm(uv + time * speed * 2.0 + v))
+    c = mix(c, c5, fbm(uv + time * speed * 4.0 + v))
+    c = mix(c, c6, fbm(uv + time * speed * 8.0 + v))
     
     brightness := 0.2 + Mouse.y/Resolution.y*0.5
     contrast := 1.5
