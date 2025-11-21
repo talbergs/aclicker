@@ -2,8 +2,8 @@ package main
 
 import (
 	"clicker2/game"
-	"clicker2/game/hud"
 	"clicker2/game/clickanalysis"
+	"clicker2/game/hud"
 	"clicker2/shaders"
 	"image"
 	"image/color"
@@ -104,9 +104,12 @@ func (g *EbitenGame) handleInput() {
 func (g *EbitenGame) Draw(screen *ebiten.Image) {
 	// Draw the desert background
 	if g.shadersEnabled {
+		x, y := ebiten.CursorPosition()
 		op := &ebiten.DrawRectShaderOptions{
 			Uniforms: map[string]interface{}{
-				"Time": g.time / 60.0,
+				"Time":       g.time / 60.0,
+				"Resolution": []float32{screenWidth, screenHeight},
+				"Mouse":      []float32{float32(x), float32(y)},
 			},
 		}
 		screen.DrawRectShader(screenWidth, screenHeight, shaders.DesertShader, op)
