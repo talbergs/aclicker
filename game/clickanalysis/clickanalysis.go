@@ -11,7 +11,7 @@ const (
 	defaultGridHeight = 100
 	defaultDecayRate  = 0.05 // How much heat decays per second
 	defaultMaxHeat    = 1.0  // Max heat value for a cell
-	clickHeatAmount   = 0.5  // How much heat a single click adds
+	clickHeatAmount   = 20.5  // How much heat a single click adds
 )
 
 // ClickGrid represents a 2D grid that tracks click "heat" over time.

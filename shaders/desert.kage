@@ -1,0 +1,36 @@
+//kage:unit pixels
+
+package main
+
+var Time float
+var Cursor vec2
+
+func Fragment(pos vec4, tex vec2, col vec4) vec4 {
+    uv := tex
+    
+    // Wave parameters
+    amplitude := 0.02
+    frequency := 20.0
+    speed := 0.5
+
+    // Create a moving wave pattern
+    wave := amplitude * sin(uv.y*frequency+Time*speed)
+
+    // Add another wave for more detail
+    wave += 0.01 * sin(uv.y*40.0+Time*0.8)
+
+    // Offset the x coordinate to create the dune effect
+    uv.x += wave
+
+    // Define colors for the desert
+    sandColor := vec3(0.96, 0.87, 0.70) // A light sandy color
+    shadowColor := vec3(0.82, 0.71, 0.55) // A darker shade for shadows
+
+    // Use a smooth step to create the dune shapes
+    dune := smoothstep(0.5, 0.51, fract(uv.x*10.0))
+
+    // Mix the colors based on the dune shape
+    finalColor := mix(sandColor, shadowColor, dune)
+
+    return vec4(finalColor, 1.0)
+}

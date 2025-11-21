@@ -22,12 +22,16 @@ var clickHeatSrc []byte
 //go:embed timeclick.kage
 var timeClickSrc []byte
 
+//go:embed desert.kage
+var desertSrc []byte
+
 var (
 	GrayscaleShader *ebiten.Shader
 	InvertShader    *ebiten.Shader
 	WarpShader      *ebiten.Shader
 	ClickHeatShader *ebiten.Shader
 	TimeClickShader *ebiten.Shader
+	DesertShader    *ebiten.Shader
 )
 
 func init() {
@@ -53,6 +57,11 @@ func init() {
 	}
 
 	TimeClickShader, err = ebiten.NewShader(timeClickSrc)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	DesertShader, err = ebiten.NewShader(desertSrc)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -89,6 +98,16 @@ func TimeClick(time float32) ShaderEffect {
 		Shader: TimeClickShader,
 		Uniforms: map[string]interface{}{
 			"Time":   time,
+		},
+	}
+}
+
+// Desert returns a ShaderEffect for the desert shader.
+func Desert(time float32) ShaderEffect {
+	return ShaderEffect{
+		Shader: DesertShader,
+		Uniforms: map[string]interface{}{
+			"Time": time,
 		},
 	}
 }

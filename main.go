@@ -102,6 +102,16 @@ func (g *EbitenGame) handleInput() {
 // Draw draws the game screen.
 // Draw is called every frame (typically 1/60 second).
 func (g *EbitenGame) Draw(screen *ebiten.Image) {
+	// Draw the desert background
+	if g.shadersEnabled {
+		op := &ebiten.DrawRectShaderOptions{
+			Uniforms: map[string]interface{}{
+				"Time": g.time / 60.0,
+			},
+		}
+		screen.DrawRectShader(screenWidth, screenHeight, shaders.DesertShader, op)
+	}
+
 	var finalImage *ebiten.Image
 	if g.shadersEnabled {
 		clickGridEbitenImage := ebiten.NewImageFromImage(g.clickGrid.ToRGBA())
