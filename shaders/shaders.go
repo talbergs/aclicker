@@ -7,22 +7,22 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-//go:embed grayscale.kage
+//go:embed kage/grayscale.kage
 var grayscaleSrc []byte
 
-//go:embed invert.kage
+//go:embed kage/invert.kage
 var invertSrc []byte
 
-//go:embed warp.kage
+//go:embed kage/warp.kage
 var warpSrc []byte
 
-//go:embed clickheat.kage
+//go:embed kage/clickheat.kage
 var clickHeatSrc []byte
 
-//go:embed timeclick.kage
+//go:embed kage/timeclick.kage
 var timeClickSrc []byte
 
-//go:embed desert.kage
+//go:embed kage/desert.kage
 var desertSrc []byte
 
 var (
