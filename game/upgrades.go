@@ -151,20 +151,20 @@ func (um *UpgradeManager) GetAllUpgrades() []*Upgrade {
 }
 
 // PurchaseUpgrade attempts to purchase an upgrade for the player.
-func (g *Game) PurchaseUpgrade(id string) error {
+func (g *Game) PurchaseUpgrade(id string) *errors.GameError {
 	u, err := g.Upgrades.GetUpgrade(id)
 	if err != nil {
-		return err
+		return err // GetUpgrade already returns *errors.GameError
 	}
 
 	currentLevel := g.Upgrades.GetPlayerUpgradeLevel(id)
 	if currentLevel >= u.MaxLevel {
-		return fmt.Errorf("upgrade %s already at max level", id)
+		return errors.NewGameError(errors.ErrUpgradeMaxLevel)
 	}
 
 	cost := u.Cost(currentLevel)
 	if g.ThePlayer.Dust < cost {
-		return fmt.Errorf("not enough dust to purchase upgrade %s", id)
+		return errors.NewGameError(errors.ErrInsufficientDust)
 	}
 
 	oldDust := g.ThePlayer.Dust // Capture old dust before deduction

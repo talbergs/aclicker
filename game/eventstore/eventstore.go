@@ -8,12 +8,13 @@ import (
 	"sync"
 
 	"clicker2/game/events"
+	"clicker2/game/errors" // Import the new errors package
 )
 
 // EventStore defines the interface for storing and loading events.
 type EventStore interface {
 	SaveEvent(event events.Event) error
-	LoadEvents() ([]events.Event, error)
+	LoadEvents() ([]events.Event, *errors.GameError)
 }
 
 // FileEventStore implements EventStore for file-based persistence.
@@ -67,13 +68,13 @@ func (fs *FileEventStore) SaveEvent(event events.Event) error {
 }
 
 // LoadEvents reads all events from the file and deserializes them.
-func (fs *FileEventStore) LoadEvents() ([]events.Event, error) {
+func (fs *FileEventStore) LoadEvents() ([]events.Event, *errors.GameError) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
 	file, err := os.OpenFile(fs.filePath, os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open event store file: %w", err)
+		return nil, errors.NewGameError(errors.ErrUnknown, fmt.Sprintf("failed to open event store file: %v", err))
 	}
 	defer file.Close()
 
@@ -90,7 +91,7 @@ func (fs *FileEventStore) LoadEvents() ([]events.Event, error) {
 			Data json.RawMessage `json:"data"`
 		}
 		if err := json.Unmarshal(line, &eventWrapper); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal event wrapper: %w", err)
+			return nil, errors.NewGameError(errors.ErrUnknown, fmt.Sprintf("failed to unmarshal event wrapper: %v", err))
 		}
 
 		var event events.Event
@@ -98,30 +99,30 @@ func (fs *FileEventStore) LoadEvents() ([]events.Event, error) {
 		case "DamageUpgraded":
 			var e events.DamageUpgradedEvent
 			if err := json.Unmarshal(eventWrapper.Data, &e); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal DamageUpgradedEvent: %w", err)
+				return nil, errors.NewGameError(errors.ErrUnknown, fmt.Sprintf("failed to unmarshal DamageUpgradedEvent: %v", err))
 			}
 			event = &e
 		case "Click": // Added case for ClickEvent
 			var e events.ClickEvent
 			if err := json.Unmarshal(eventWrapper.Data, &e); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal ClickEvent: %w", err)
+				return nil, errors.NewGameError(errors.ErrUnknown, fmt.Sprintf("failed to unmarshal ClickEvent: %v", err))
 			}
 			event = &e
 		case "UpgradePurchased": // Added case for UpgradePurchasedEvent
 			var e events.UpgradePurchasedEvent
 			if err := json.Unmarshal(eventWrapper.Data, &e); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal UpgradePurchasedEvent: %w", err)
+				return nil, errors.NewGameError(errors.ErrUnknown, fmt.Sprintf("failed to unmarshal UpgradePurchasedEvent: %v", err))
 			}
 			event = &e
 		// Add other event types here as they are defined
 		default:
-			return nil, fmt.Errorf("unknown event type: %s", eventWrapper.Type)
+			return nil, errors.NewGameError(errors.ErrUnknownEventType, fmt.Sprintf("unknown event type: %s", eventWrapper.Type))
 		}
 		loadedEvents = append(loadedEvents, event)
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading event store file: %w", err)
+		return nil, errors.NewGameError(errors.ErrUnknown, fmt.Sprintf("error reading event store file: %v", err))
 	}
 
 	return loadedEvents, nil

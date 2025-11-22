@@ -9,6 +9,7 @@ import (
 
 	"clicker2/game/events"
 	"clicker2/game/eventstore"
+	"clicker2/game/errors" // Import the new errors package
 )
 
 // osExit is a package-level variable that can be mocked for testing os.Exit
@@ -123,8 +124,8 @@ func (g *Game) ApplyUpgradePurchasedEvent(event events.Event) {
 		// This is important for replay, as the effect might modify other game state
 		// that isn't directly part of the event (e.g., g.ThePlayer.Damage)
 		upgrade, err := g.Upgrades.GetUpgrade(e.UpgradeID)
-		if err != nil {
-			log.Printf("Error getting upgrade %s during replay: %v", e.UpgradeID, err)
+		if err != nil { // err is now *errors.GameError
+			log.Printf("Error getting upgrade %s during replay: %v", e.UpgradeID, err.Error())
 			return
 		}
 		upgrade.ReconstructEffect(g, e.NewLevel)
@@ -163,7 +164,7 @@ func (g *Game) Load() error {
 }
 
 // LoadGameFromEvents creates a new game instance and replays events from the provided EventStore.
-func LoadGameFromEvents(es eventstore.EventStore) (*Game, error) {
+func LoadGameFromEvents(es eventstore.EventStore) (*Game, *errors.GameError) {
 	// Create a new game instance with an event dispatcher that does NOT save events during replay
 	g := &Game{
 		TheRock: &Rock{
@@ -197,7 +198,7 @@ func LoadGameFromEvents(es eventstore.EventStore) (*Game, error) {
 	// Load all events from the event store
 	loadedEvents, err := es.LoadEvents()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load events from event store: %w", err)
+		return nil, errors.NewGameError(errors.ErrUnknown, fmt.Sprintf("failed to load events from event store: %v", err))
 	}
 
 	// Replay the events to reconstruct the game state

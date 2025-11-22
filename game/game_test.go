@@ -7,6 +7,7 @@ import (
 	"clicker2/game"
 	"clicker2/game/events"
 	"clicker2/game/eventstore"
+	"clicker2/game/errors" // Import the new errors package
 )
 
 func TestGameReplay(t *testing.T) {
@@ -34,7 +35,7 @@ func TestGameReplay(t *testing.T) {
 	// Load a new game instance from the events logged by the original game
 	replayedGame, err := game.LoadGameFromEvents(originalEventStore)
 	if err != nil {
-		t.Fatalf("Failed to load game from events: %v", err)
+		t.Fatalf("Failed to load game from events: %v", err.Error())
 	}
 
 	// Assert that the state of the replayed game matches the original game
@@ -90,7 +91,7 @@ func TestUpgradeSystem(t *testing.T) {
 	g.ThePlayer.Dust = 10 // Enough for first level
 	err := g.PurchaseUpgrade("stronger_pickaxe")
 	if err != nil {
-		t.Fatalf("Failed to purchase stronger_pickaxe: %v", err)
+		t.Fatalf("Failed to purchase stronger_pickaxe: %v", err.Error())
 	}
 	if g.ThePlayer.Damage != 2 {
 		t.Errorf("Stronger pickaxe damage mismatch: got %d, want %d", g.ThePlayer.Damage, 2)
@@ -108,23 +109,23 @@ func TestUpgradeSystem(t *testing.T) {
 		t.Errorf("Stronger pickaxe max level damage mismatch: got %d, want %d", g.ThePlayer.Damage, 6)
 	}
 	err = g.PurchaseUpgrade("stronger_pickaxe")
-	if err == nil || err.Error() != "upgrade stronger_pickaxe already at max level" {
-		t.Errorf("Expected max level error, got %v", err)
+	if err == nil || err.Code != errors.ErrUpgradeMaxLevel {
+		t.Errorf("Expected max level error with code %d, got %v", errors.ErrUpgradeMaxLevel, err)
 	}
 
 	// Test "stronger_pickaxe" insufficient dust (after resetting game to ensure not max level)
 	g = game.NewGame() // Reset game state
 	g.ThePlayer.Dust = 0
 	err = g.PurchaseUpgrade("stronger_pickaxe")
-	if err == nil || err.Error() != "not enough dust to purchase upgrade stronger_pickaxe" {
-		t.Errorf("Expected insufficient dust error, got %v", err)
+	if err == nil || err.Code != errors.ErrInsufficientDust {
+		t.Errorf("Expected insufficient dust error with code %d, got %v", errors.ErrInsufficientDust, err)
 	}
 
 	// Test "auto_clicker_v0_1" purchase
 	g.ThePlayer.Dust = 100 // Enough dust
 	err = g.PurchaseUpgrade("auto_clicker_v0_1")
 	if err != nil {
-		t.Fatalf("Failed to purchase auto_clicker_v0_1: %v", err)
+		t.Fatalf("Failed to purchase auto_clicker_v0_1: %v", err.Error())
 	}
 	if !g.AutoClickerActive {
 		t.Errorf("Auto-clicker v0.1 not active")
@@ -137,7 +138,7 @@ func TestUpgradeSystem(t *testing.T) {
 	g.ThePlayer.Dust = 500 // Enough dust
 	err = g.PurchaseUpgrade("auto_clicker_v1_0")
 	if err != nil {
-		t.Fatalf("Failed to purchase auto_clicker_v1_0: %v", err)
+		t.Fatalf("Failed to purchase auto_clicker_v1_0: %v", err.Error())
 	}
 	if !g.AutoClickerActive {
 		t.Errorf("Auto-clicker v1.0 not active")
@@ -159,7 +160,7 @@ func TestEndings(t *testing.T) {
 	g.ThePlayer.Dust = 100000 // Enough dust
 	err := g.PurchaseUpgrade("heart_of_the_mountain")
 	if err != nil {
-		t.Fatalf("Failed to purchase heart_of_the_mountain: %v", err)
+		t.Fatalf("Failed to purchase heart_of_the_mountain: %v", err.Error())
 	}
 	if !g.EndGameChoicePending {
 		t.Errorf("EndGameChoicePending not set after purchasing heart_of_the_mountain")
@@ -197,7 +198,10 @@ func TestSaveLoad(t *testing.T) {
 	originalGame.TheRock.Health = 5000000
 	originalGame.ThePlayer.Dust = 12345
 	originalGame.ThePlayer.Damage = 5
-	originalGame.PurchaseUpgrade("stronger_pickaxe") // Purchase an upgrade
+	err := originalGame.PurchaseUpgrade("stronger_pickaxe") // Purchase an upgrade
+	if err != nil {
+		t.Fatalf("Failed to purchase stronger_pickaxe in originalGame: %v", err.Error())
+	}
 	originalGame.AutoClickerActive = true
 	originalGame.AutoClickerRate = 1
 	originalGame.CurrentRockMessage = "Test Message"
