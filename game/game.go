@@ -4,14 +4,17 @@ import (
 	"encoding/json"
 	"os"
 	"fmt"
+	"math/rand" // Added for random message selection
+	"log" // Added for logging game endings
 
 	"clicker2/game/events"
 	"clicker2/game/eventstore"
 )
 
+
+
 const (
 	InitialRockHealth = 10000000
-	UpgradeCost       = 10
 	saveFile          = "save.json"
 )
 
@@ -30,7 +33,16 @@ type Player struct {
 type Game struct {
 	TheRock   *Rock
 	ThePlayer *Player
+	Upgrades  *UpgradeManager
 	Dispatcher *events.EventDispatcher
+	AutoClickerActive bool
+	AutoClickerRate   int
+	CurrentRockMessage string
+	RockMessageTimer   float64 // Duration for which the message is displayed
+	RockMessages       []string
+	EndGameChoicePending bool
+	GameOver             bool
+	GameWon              bool
 }
 
 // NewGame creates a new game state with initial values.
@@ -44,9 +56,23 @@ func NewGame() *Game {
 			Dust:   0,
 			Damage: 1,
 		},
+		Upgrades:   NewUpgradeManager(),
 		Dispatcher: events.NewEventDispatcher(es), // Pass EventStore to dispatcher
+		AutoClickerActive: false,
+		AutoClickerRate:   0,
+		CurrentRockMessage: "",
+		RockMessageTimer:   0.0,
+		RockMessages: []string{
+			"A gentle hum emanates from within...",
+			"You feel a faint tremor.",
+			"The rock seems... content.",
+			"A tiny shard breaks off, almost imperceptibly.",
+			"You hear a soft, distant sigh.",
+		},
+		EndGameChoicePending: false,
+		GameOver:             false,
+		GameWon:              false,
 	}
-	g.Dispatcher.Register("DamageUpgraded", g.ApplyDamageUpgradedEvent)
 	g.Dispatcher.Register("Click", g.ApplyClickEvent)
 	return g
 }
@@ -69,6 +95,13 @@ func (g *Game) Click() {
 		PlayerDustBefore: playerDustBefore,
 		PlayerDustAfter: playerDustBefore + dustGained,
 	})
+
+	// Trigger a rock message
+	if len(g.RockMessages) > 0 {
+		randomIndex := rand.Intn(len(g.RockMessages))
+		g.CurrentRockMessage = g.RockMessages[randomIndex]
+		g.RockMessageTimer = 3.0 // Display message for 3 seconds
+	}
 }
 
 // ApplyClickEvent applies the state changes from a ClickEvent.
@@ -86,34 +119,7 @@ func (g *Game) ReplayEvents(evs []events.Event) {
 	}
 }
 
-// ApplyDamageUpgradedEvent applies the state changes from a DamageUpgradedEvent.
-func (g *Game) ApplyDamageUpgradedEvent(event events.Event) {
-	if e, ok := event.(*events.DamageUpgradedEvent); ok {
-		g.ThePlayer.Dust = e.NewDust
-		g.ThePlayer.Damage = e.NewDamage
-	}
-}
 
-// UpgradeDamage dispatches an event to upgrade the player's damage if they have enough dust.
-func (g *Game) UpgradeDamage() {
-	if g.ThePlayer.Dust >= UpgradeCost {
-		oldDust := g.ThePlayer.Dust
-		oldDamage := g.ThePlayer.Damage
-
-		// Calculate new state
-		newDust := oldDust - UpgradeCost
-		newDamage := oldDamage + 1
-
-		// Dispatch event
-		g.Dispatcher.Dispatch(&events.DamageUpgradedEvent{
-			PlayerID: "player1", // Placeholder, in a real game this would be dynamic
-			OldDamage: oldDamage,
-			NewDamage: newDamage,
-			OldDust: oldDust,
-			NewDust: newDust,
-		})
-	}
-}
 
 // Save serializes the game state to a file.
 func (g *Game) Save() error {
@@ -130,7 +136,11 @@ func (g *Game) Load() error {
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(data, g)
+	if err := json.Unmarshal(data, g); err != nil {
+		return err
+	}
+	g.Upgrades.Init() // Re-initialize the upgrades map after loading
+	return nil
 }
 
 // LoadGameFromEvents creates a new game instance and replays events from the provided EventStore.
@@ -144,9 +154,24 @@ func LoadGameFromEvents(es eventstore.EventStore) (*Game, error) {
 			Dust:   0,
 			Damage: 1,
 		},
+		Upgrades:   NewUpgradeManager(), // Initialize UpgradeManager
 		Dispatcher: events.NewEventDispatcher(nil), // Pass nil for EventStore during replay
+		AutoClickerActive: false,
+		AutoClickerRate:   0,
+		CurrentRockMessage: "",
+		RockMessageTimer:   0.0,
+		RockMessages: []string{
+			"A gentle hum emanates from within...",
+			"You feel a faint tremor.",
+			"The rock seems... content.",
+			"A tiny shard breaks off, almost imperceptibly.",
+			"You hear a soft, distant sigh.",
+		},
+		EndGameChoicePending: false,
+		GameOver:             false,
+		GameWon:              false,
 	}
-	g.Dispatcher.Register("DamageUpgraded", g.ApplyDamageUpgradedEvent)
+	g.Upgrades.Init() // Initialize upgrades
 	g.Dispatcher.Register("Click", g.ApplyClickEvent)
 
 	// Load all events from the event store
@@ -160,10 +185,34 @@ func LoadGameFromEvents(es eventstore.EventStore) (*Game, error) {
 
 	// After replay, set up the dispatcher to save new events
 	g.Dispatcher = events.NewEventDispatcher(es) // Re-initialize with the actual EventStore
-	g.Dispatcher.Register("DamageUpgraded", g.ApplyDamageUpgradedEvent)
 	g.Dispatcher.Register("Click", g.ApplyClickEvent)
 
 
 	return g, nil
+}
+
+// TakeHeart implements the "Bad Ending" logic.
+func (g *Game) TakeHeart() {
+	log.Println("Bad Ending: You took the Heart of the Mountain.")
+	g.TheRock.Health = 0 // Shatter the rock
+	g.CurrentRockMessage = "The mountain is no more. You are alone with your dust."
+	g.RockMessageTimer = -1.0 // Display indefinitely
+	g.GameOver = true
+	// In a real game, you might show a final screen before exiting.
+	os.Exit(0)
+}
+
+// LetRest implements the "Good Ending" logic.
+func (g *Game) LetRest() {
+	log.Println("Good Ending: You let the Heart of the Mountain rest.")
+	g.CurrentRockMessage = "The rock is at peace. You have won."
+	g.RockMessageTimer = -1.0 // Display indefinitely
+	g.GameWon = true
+	// Save the game in its "won" state
+	if err := g.Save(); err != nil {
+		log.Printf("Error saving game after winning: %v", err)
+	}
+	// In a real game, you might show a final screen before exiting.
+	os.Exit(0)
 }
 

@@ -1,29 +1,32 @@
-```
 +-------------------+
 |       main        |
 | (main.go)         |
 |-------------------|
-| - Game struct     |
+| - EbitenGame struct|
 | - Update()        |
 | - Draw()          |
 | - handleInput()   |
+| - main()          |
 +---------^---------+
           |
           | Uses
           |
 +---------+---------+         +-------------------+
 |       game        |         |       shaders     |
-| (game/game.go)    |         | (shaders/*.go)    |
+| (shaders/*.kage)  |
 |-------------------|         |-------------------|
-| - Rock struct     |         | - ShaderEffect    |
-| - Player struct   |         | - Game struct     |
-| - EventDispatcher |         | - Grayscale()     |
-| - NewGame()       |         | - Invert()        |
-| - Click()         |         | - Warp()          |
-| - UpgradeDamage() |         | - Apply()         |
-| - ApplyDamageUpEvent()|     +---------^---------+
+| - Game struct     |         | - DesertShader    |
+| - Rock struct     |         | - TimeClickShader |
+| - Player struct   |         | - GrayscaleShader |
+| - UpgradeManager  |         | - InvertShader    |
+| - EventDispatcher |         | - WarpShader      |
+| - NewGame()       |         +---------^---------+
+| - Click()         |                   |
+| - PurchaseUpgrade()|                  | Uses
+| - TakeHeart()     |                   |
+| - LetRest()       |                   |
 | - Save()          |                   |
-| - Load()          |                   | Uses
+| - Load()          |                   |
 +---------^---------+                   |
           |                             |
           | Uses                        |
@@ -33,10 +36,29 @@
 | (game/hud/hud.go)                   |
 |-------------------------------------|
 | - HUD struct                        |
+| - UpgradeButton struct              |
 | - NewHUD()                          |
 | - Draw()                            |
 | - DrawHealthBar()                   |
+| - GetClickedUpgradeID()             |
+| - GetClickedChoiceID()              |
 +-------------------------------------+
+          ^
+          |
+          | Uses
+          |
++---------+---------+
+|       game/upgrades|
+| (game/upgrades.go)|
+|-------------------|
+| - Upgrade struct  |
+| - UpgradeManager  |
+| - NewUpgradeManager()|
+| - Init()          |
+| - GetAllUpgrades()|
+| - GetUpgrade()    |
+| - GetPlayerUpgradeLevel()|
++-------------------+
           ^
           |
           | Uses
@@ -46,11 +68,24 @@
 | (game/events.go)  |
 |-------------------|
 | - Event interface |
-| - DamageUpgradedEvent |
+| - ClickEvent      |
 | - EventHandler    |
 | - EventDispatcher |
 | - NewEventDispatcher()|
 | - Register()      |
 | - Dispatch()      |
 +-------------------+
-```
+          ^
+          |
+          | Uses
+          |
++---------+---------+
+|       assets      |
+| (assets/assets.go)|
+|-------------------|
+| - Image assets    |
+| - Audio assets    |
+| - AudioContext    |
+| - Music Players   |
+| - SFX Players     |
++-------------------+

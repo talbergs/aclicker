@@ -6,6 +6,7 @@ var Resolution vec2
 var Mouse vec2
 var ClickSpeed float
 var LastClickPos vec2
+var HealthPercentage float // New uniform for environmental decay
 
 func rand(n vec2) float {
     return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453)
@@ -30,12 +31,29 @@ func fbm(n vec2) float {
 }
 
 func Fragment(pos vec4, tex vec2, col vec4) vec4 {
-    c1 := vec3(0.5, 0.0, 0.1)
-    c2 := vec3(0.9, 0.1, 0.0)
-    c3 := vec3(0.2, 0.1, 0.7)
-    c4 := vec3(1.0, 0.9, 0.0)
-    c5 := vec3(0.1)
-    c6 := vec3(0.9)
+    // Healthy colors
+    c1_healthy := vec3(0.5, 0.0, 0.1) // Dark red/brown
+    c2_healthy := vec3(0.9, 0.1, 0.0) // Orange/red
+    c3_healthy := vec3(0.2, 0.1, 0.7) // Purple/blue (sky)
+    c4_healthy := vec3(1.0, 0.9, 0.0) // Yellow (sun/highlights)
+    c5_healthy := vec3(0.1)           // Dark
+    c6_healthy := vec3(0.9)           // Light
+
+    // Decayed colors (more grey, brown, less vibrant)
+    c1_decayed := vec3(0.2, 0.1, 0.1) // Darker brown
+    c2_decayed := vec3(0.4, 0.2, 0.1) // Muted orange/brown
+    c3_decayed := vec3(0.1, 0.1, 0.2) // Darker, duller sky
+    c4_decayed := vec3(0.5, 0.4, 0.3) // Greyish yellow
+    c5_decayed := vec3(0.05)          // Very dark
+    c6_decayed := vec3(0.5)           // Muted light
+
+    // Mix colors based on HealthPercentage
+    c1 := mix(c1_decayed, c1_healthy, HealthPercentage)
+    c2 := mix(c2_decayed, c2_healthy, HealthPercentage)
+    c3 := mix(c3_decayed, c3_healthy, HealthPercentage)
+    c4 := mix(c4_decayed, c4_healthy, HealthPercentage)
+    c5 := mix(c5_decayed, c5_healthy, HealthPercentage)
+    c6 := mix(c6_decayed, c6_healthy, HealthPercentage)
 
     speed := vec2(0.1, 0.9)
     
