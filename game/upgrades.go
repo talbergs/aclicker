@@ -1,6 +1,10 @@
 package game
 
-import "fmt"
+import (
+	"fmt"
+	"clicker2/game/events"
+	"clicker2/game/errors" // Import the new errors package
+)
 
 // Effect is a function that applies an upgrade to the game state.
 type Effect func(g *Game)
@@ -15,7 +19,8 @@ type Upgrade struct {
 	Description string
 	MaxLevel    int
 	Cost        CostFunc
-	ApplyEffect Effect
+	ApplyEffect Effect // Applied when purchased
+	ReconstructEffect func(g *Game, level int) // Applied during event replay
 }
 
 // UpgradeManager manages all upgrades in the game.
@@ -51,6 +56,9 @@ func (um *UpgradeManager) registerUpgrades() {
 		ApplyEffect: func(g *Game) {
 			g.ThePlayer.Damage++
 		},
+		ReconstructEffect: func(g *Game, level int) {
+			g.ThePlayer.Damage = 1 + level // Base damage + level
+		},
 	})
 
 	um.addUpgrade(&Upgrade{
@@ -62,6 +70,12 @@ func (um *UpgradeManager) registerUpgrades() {
 		ApplyEffect: func(g *Game) {
 			g.AutoClickerActive = true
 			g.AutoClickerRate = 1
+		},
+		ReconstructEffect: func(g *Game, level int) {
+			if level > 0 {
+				g.AutoClickerActive = true
+				g.AutoClickerRate = 1
+			}
 		},
 	})
 
@@ -76,6 +90,12 @@ func (um *UpgradeManager) registerUpgrades() {
 			g.AutoClickerRate = 5 // Increase rate
 			// In a real game, this would also disable the toggle UI
 		},
+		ReconstructEffect: func(g *Game, level int) {
+			if level > 0 {
+				g.AutoClickerActive = true
+				g.AutoClickerRate = 5
+			}
+		},
 	})
 
 	um.addUpgrade(&Upgrade{
@@ -89,6 +109,13 @@ func (um *UpgradeManager) registerUpgrades() {
 			g.CurrentRockMessage = "You have reached the Heart of the Mountain. The rock is now still. It has given all it can. You have gathered enough. Will you take the final piece, or will you let it rest?"
 			g.RockMessageTimer = -1.0 // Display indefinitely until choice is made
 		},
+		ReconstructEffect: func(g *Game, level int) {
+			if level > 0 {
+				g.EndGameChoicePending = true
+				g.CurrentRockMessage = "You have reached the Heart of the Mountain. The rock is now still. It has given all it can. You have gathered enough. Will you take the final piece, or will you let it rest?"
+				g.RockMessageTimer = -1.0
+			}
+		},
 	})
 }
 
@@ -97,10 +124,10 @@ func (um *UpgradeManager) addUpgrade(u *Upgrade) {
 }
 
 // GetUpgrade returns an upgrade by its ID.
-func (um *UpgradeManager) GetUpgrade(id string) (*Upgrade, error) {
+func (um *UpgradeManager) GetUpgrade(id string) (*Upgrade, *errors.GameError) {
 	u, ok := um.upgrades[id]
 	if !ok {
-		return nil, fmt.Errorf("upgrade with id %s not found", id)
+		return nil, errors.NewGameError(errors.ErrUpgradeNotFound)
 	}
 	return u, nil
 }
@@ -140,6 +167,7 @@ func (g *Game) PurchaseUpgrade(id string) error {
 		return fmt.Errorf("not enough dust to purchase upgrade %s", id)
 	}
 
+	oldDust := g.ThePlayer.Dust // Capture old dust before deduction
 	// Deduct cost and apply effect
 	g.ThePlayer.Dust -= cost
 	u.ApplyEffect(g)
@@ -148,9 +176,15 @@ func (g *Game) PurchaseUpgrade(id string) error {
 	g.Upgrades.PlayerUpgrades[id]++
 
 	fmt.Printf("Player purchased upgrade: %s, New Level: %d\n", id, g.Upgrades.PlayerUpgrades[id])
-	// Here you would typically dispatch an event, e.g.,
-	// g.Dispatcher.Dispatch(&events.UpgradePurchasedEvent{UpgradeID: id, NewLevel: g.Upgrades.playerUpgrades[id]})
-	// For now, we'll just directly modify the state.
 
+	// Dispatch event
+	g.Dispatcher.Dispatch(&events.UpgradePurchasedEvent{
+		PlayerID: "player1", // Placeholder
+		UpgradeID: id,
+		NewLevel: g.Upgrades.PlayerUpgrades[id],
+		OldDust: oldDust, // Need to capture old dust before deduction
+		NewDust: g.ThePlayer.Dust,
+	})
 	return nil
 }
+

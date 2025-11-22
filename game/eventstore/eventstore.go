@@ -107,6 +107,12 @@ func (fs *FileEventStore) LoadEvents() ([]events.Event, error) {
 				return nil, fmt.Errorf("failed to unmarshal ClickEvent: %w", err)
 			}
 			event = &e
+		case "UpgradePurchased": // Added case for UpgradePurchasedEvent
+			var e events.UpgradePurchasedEvent
+			if err := json.Unmarshal(eventWrapper.Data, &e); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal UpgradePurchasedEvent: %w", err)
+			}
+			event = &e
 		// Add other event types here as they are defined
 		default:
 			return nil, fmt.Errorf("unknown event type: %s", eventWrapper.Type)

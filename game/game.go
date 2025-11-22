@@ -11,7 +11,8 @@ import (
 	"clicker2/game/eventstore"
 )
 
-
+// osExit is a package-level variable that can be mocked for testing os.Exit
+var OsExit = os.Exit
 
 const (
 	InitialRockHealth = 10000000
@@ -74,6 +75,7 @@ func NewGame() *Game {
 		GameWon:              false,
 	}
 	g.Dispatcher.Register("Click", g.ApplyClickEvent)
+	g.Dispatcher.Register("UpgradePurchased", g.ApplyUpgradePurchasedEvent)
 	return g
 }
 
@@ -109,6 +111,23 @@ func (g *Game) ApplyClickEvent(event events.Event) {
 	if e, ok := event.(*events.ClickEvent); ok {
 		g.TheRock.Health = e.RockHealthAfter
 		g.ThePlayer.Dust = e.PlayerDustAfter
+	}
+}
+
+// ApplyUpgradePurchasedEvent applies the state changes from an UpgradePurchasedEvent.
+func (g *Game) ApplyUpgradePurchasedEvent(event events.Event) {
+	if e, ok := event.(*events.UpgradePurchasedEvent); ok {
+		g.Upgrades.PlayerUpgrades[e.UpgradeID] = e.NewLevel
+		g.ThePlayer.Dust = e.NewDust
+		// Apply the effect of the upgrade again to ensure state consistency
+		// This is important for replay, as the effect might modify other game state
+		// that isn't directly part of the event (e.g., g.ThePlayer.Damage)
+		upgrade, err := g.Upgrades.GetUpgrade(e.UpgradeID)
+		if err != nil {
+			log.Printf("Error getting upgrade %s during replay: %v", e.UpgradeID, err)
+			return
+		}
+		upgrade.ReconstructEffect(g, e.NewLevel)
 	}
 }
 
@@ -173,6 +192,7 @@ func LoadGameFromEvents(es eventstore.EventStore) (*Game, error) {
 	}
 	g.Upgrades.Init() // Initialize upgrades
 	g.Dispatcher.Register("Click", g.ApplyClickEvent)
+	g.Dispatcher.Register("UpgradePurchased", g.ApplyUpgradePurchasedEvent)
 
 	// Load all events from the event store
 	loadedEvents, err := es.LoadEvents()
@@ -186,6 +206,7 @@ func LoadGameFromEvents(es eventstore.EventStore) (*Game, error) {
 	// After replay, set up the dispatcher to save new events
 	g.Dispatcher = events.NewEventDispatcher(es) // Re-initialize with the actual EventStore
 	g.Dispatcher.Register("Click", g.ApplyClickEvent)
+	g.Dispatcher.Register("UpgradePurchased", g.ApplyUpgradePurchasedEvent)
 
 
 	return g, nil
@@ -199,7 +220,7 @@ func (g *Game) TakeHeart() {
 	g.RockMessageTimer = -1.0 // Display indefinitely
 	g.GameOver = true
 	// In a real game, you might show a final screen before exiting.
-	os.Exit(0)
+	OsExit(0)
 }
 
 // LetRest implements the "Good Ending" logic.
@@ -213,6 +234,49 @@ func (g *Game) LetRest() {
 		log.Printf("Error saving game after winning: %v", err)
 	}
 	// In a real game, you might show a final screen before exiting.
-	os.Exit(0)
+	OsExit(0)
+}
+
+// SetStateEarlyGame sets the game state to an early game scenario.
+func (g *Game) SetStateEarlyGame() {
+	g.TheRock.Health = InitialRockHealth
+	g.ThePlayer.Dust = 0
+	g.ThePlayer.Damage = 1
+	g.Upgrades.PlayerUpgrades = make(map[string]int) // Clear upgrades
+	g.Upgrades.Init() // Re-initialize upgrade definitions
+	g.AutoClickerActive = false
+	g.AutoClickerRate = 0
+	g.CurrentRockMessage = ""
+	g.RockMessageTimer = 0.0
+	g.EndGameChoicePending = false
+	g.GameOver = false
+	g.GameWon = false
+	log.Println("Game state set to Early Game.")
+}
+
+// SetStateMidGame sets the game state to a mid-game scenario.
+func (g *Game) SetStateMidGame() {
+	g.SetStateEarlyGame() // Start from early game state
+	g.TheRock.Health = InitialRockHealth / 2
+	g.ThePlayer.Dust = 500
+	g.ThePlayer.Damage = 5
+	g.Upgrades.PlayerUpgrades["stronger_pickaxe"] = 4 // Some upgrades
+	g.Upgrades.PlayerUpgrades["auto_clicker_v0_1"] = 1
+	g.AutoClickerActive = true
+	g.AutoClickerRate = 1
+	log.Println("Game state set to Mid Game.")
+}
+
+// SetStateEndGameReady sets the game state to be ready for the end-game choice.
+func (g *Game) SetStateEndGameReady() {
+	g.SetStateMidGame() // Start from mid game state
+	g.TheRock.Health = InitialRockHealth / 10
+	g.ThePlayer.Dust = 100000 // Enough to buy Heart of the Mountain
+	g.ThePlayer.Damage = 10
+	g.Upgrades.PlayerUpgrades["stronger_pickaxe"] = 5 // Max stronger pickaxe
+	g.Upgrades.PlayerUpgrades["auto_clicker_v1_0"] = 1 // Permanent auto-clicker
+	g.AutoClickerActive = true
+	g.AutoClickerRate = 5
+	log.Println("Game state set to End Game Ready.")
 }
 

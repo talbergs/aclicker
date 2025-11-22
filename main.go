@@ -33,6 +33,8 @@ type EbitenGame struct {
 	lastMouseY        float32
 	clickSpeed        float32
 	lastClickPos      image.Point
+	debugAutoClickerEnabled bool
+	debugAutoClickerSpeed int
 }
 
 // Update proceeds the game state.
@@ -74,6 +76,18 @@ func (g *EbitenGame) Update() error {
 
 	assets.HealthyMusicPlayer.SetVolume(healthyVolume)
 	assets.MelancholicMusicPlayer.SetVolume(melancholicVolume)
+
+	// Developer: Debug auto-clicker
+	if g.debugAutoClickerEnabled && g.debugAutoClickerSpeed > 0 {
+		// Calculate frames per click
+		framesPerClick := ebiten.TPS() / g.debugAutoClickerSpeed
+		if framesPerClick <= 0 { // Ensure at least one click per frame if speed is very high
+			framesPerClick = 1
+		}
+		if int(ebiten.ActualTPS())%framesPerClick == 0 {
+			g.state.Click()
+		}
+	}
 
 	g.clickSpeed *= 0.95
 
@@ -168,6 +182,47 @@ func (g *EbitenGame) handleInput() {
 	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
 		g.shadersEnabled = !g.shadersEnabled
 	}
+
+	// Developer: Toggle debug auto-clicker
+	if inpututil.IsKeyJustPressed(ebiten.KeyF4) {
+		g.debugAutoClickerEnabled = !g.debugAutoClickerEnabled
+		if g.debugAutoClickerEnabled {
+			log.Println("Debug Auto-Clicker ENABLED")
+		} else {
+			log.Println("Debug Auto-Clicker DISABLED")
+		}
+	}
+
+	// Developer: Cycle debug auto-clicker speed
+	if inpututil.IsKeyJustPressed(ebiten.KeyF5) {
+		if g.debugAutoClickerEnabled {
+			switch g.debugAutoClickerSpeed {
+			case 0:
+				g.debugAutoClickerSpeed = 1
+			case 1:
+				g.debugAutoClickerSpeed = 5
+			case 5:
+				g.debugAutoClickerSpeed = 10
+			case 10:
+				g.debugAutoClickerSpeed = 0 // Turn off debug auto-clicker
+				g.debugAutoClickerEnabled = false
+			}
+			log.Printf("Debug Auto-Clicker Speed: %d clicks/second", g.debugAutoClickerSpeed)
+		} else {
+			log.Println("Debug Auto-Clicker is disabled. Press F4 to enable.")
+		}
+	}
+
+	// Developer: Load specific game states
+	if inpututil.IsKeyJustPressed(ebiten.KeyF1) {
+		g.state.SetStateEarlyGame()
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyF2) {
+		g.state.SetStateMidGame()
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyF3) {
+		g.state.SetStateEndGameReady()
+	}
 }
 
 // Draw draws the game screen.
@@ -261,7 +316,7 @@ func main() {
 	clickGrid := clickanalysis.NewClickGrid(rockW, rockH)
 
 	game := &EbitenGame{
-		state:             game.NewGame(),
+		state:             gameState, // Use the already initialized gameState
 		hud:               gameHUD,
 		clickGrid:         clickGrid,
 		rockPos:           image.Point{X: rockX, Y: rockY},
@@ -270,6 +325,8 @@ func main() {
 		shadersEnabled:    true,
 		clickSpeed:        0.0,
 		lastClickPos:      image.Point{X: 0, Y: 0},
+		debugAutoClickerEnabled: false,
+		debugAutoClickerSpeed: 0,
 	}
 
 	// Start background music

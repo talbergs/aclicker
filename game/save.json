@@ -1,0 +1,29 @@
+{
+  "TheRock": {
+    "Health": 5000000
+  },
+  "ThePlayer": {
+    "Dust": 12335,
+    "Damage": 2
+  },
+  "Upgrades": {
+    "PlayerUpgrades": {
+      "stronger_pickaxe": 1
+    }
+  },
+  "Dispatcher": {},
+  "AutoClickerActive": true,
+  "AutoClickerRate": 1,
+  "CurrentRockMessage": "Test Message",
+  "RockMessageTimer": 1.5,
+  "RockMessages": [
+    "A gentle hum emanates from within...",
+    "You feel a faint tremor.",
+    "The rock seems... content.",
+    "A tiny shard breaks off, almost imperceptibly.",
+    "You hear a soft, distant sigh."
+  ],
+  "EndGameChoicePending": true,
+  "GameOver": false,
+  "GameWon": false
+}

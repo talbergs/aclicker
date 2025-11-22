@@ -23,6 +23,20 @@ func (e *DamageUpgradedEvent) EventType() string {
 	return "DamageUpgraded"
 }
 
+// UpgradePurchasedEvent is dispatched when an upgrade is purchased.
+type UpgradePurchasedEvent struct {
+	PlayerID string
+	UpgradeID string
+	NewLevel int
+	OldDust int
+	NewDust int
+}
+
+// EventType returns the type of the UpgradePurchasedEvent.
+func (e *UpgradePurchasedEvent) EventType() string {
+	return "UpgradePurchased"
+}
+
 // ClickEvent is dispatched when the rock is clicked.
 type ClickEvent struct {
 	PlayerID string
