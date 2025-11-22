@@ -7,10 +7,13 @@ import (
 	"clicker2/game/hud"
 	"clicker2/shaders"
 	"image"
+	"image/color" // Import for color
 	"log"
 
+	"golang.org/x/image/font/basicfont" // Import for basic font
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/hajimehoshi/ebiten/v2/text" // Import for text drawing
 )
 
 const (
@@ -35,6 +38,8 @@ type EbitenGame struct {
 	lastClickPos      image.Point
 	debugAutoClickerEnabled bool
 	debugAutoClickerSpeed int
+	IsPaused              bool // New field to track if the game is paused
+	ShowShortcuts         bool // New field to track if shortcuts are displayed
 }
 
 // Update proceeds the game state.
@@ -47,6 +52,10 @@ func (g *EbitenGame) Update() error {
 	if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
 		log.Println("Game quit by user.")
 		return ebiten.Termination
+	}
+
+	if g.IsPaused {
+		return nil // Skip all game logic updates if paused
 	}
 
 	// Increment time for warp shader
@@ -95,6 +104,23 @@ func (g *EbitenGame) Update() error {
 }
 
 func (g *EbitenGame) handleInput() {
+	// Toggle pause and shortcut display with KeyH
+	if inpututil.IsKeyJustPressed(ebiten.KeyH) {
+		g.IsPaused = !g.IsPaused
+		g.ShowShortcuts = !g.ShowShortcuts // Toggle shortcut display along with pause
+		if g.IsPaused {
+			log.Println("Game Paused. Press H for shortcuts.")
+		} else {
+			log.Println("Game Resumed.")
+		}
+	}
+
+	// If the game is paused, only allow KeyH and KeyQ to be processed.
+	// All other game-related inputs should be ignored.
+	if g.IsPaused {
+		return
+	}
+
 	// Mouse clicks
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		x, y := ebiten.CursorPosition()
@@ -287,6 +313,27 @@ func (g *EbitenGame) Draw(screen *ebiten.Image) {
 
 	// Draw the HUD
 	g.hud.Draw(screen, g.state, g.shadersEnabled)
+
+	// Draw shortcuts if enabled
+	if g.ShowShortcuts {
+		// Draw a semi-transparent background
+		overlay := ebiten.NewImage(screenWidth, screenHeight)
+		overlay.Fill(color.RGBA{0, 0, 0, 180}) // Dark, semi-transparent
+		screen.DrawImage(overlay, &ebiten.DrawImageOptions{})
+
+		// Define font and color
+		f := basicfont.Face7x13
+		col := color.White
+		lineHeight := f.Metrics().Height.Ceil() + 4 // Add some padding between lines
+
+		// Starting position for text
+		xOffset := 50
+		yOffset := 50
+
+		for i, shortcut := range g.Shortcuts() {
+			text.Draw(screen, shortcut, f, xOffset, yOffset+(i*lineHeight), col)
+		}
+	}
 }
 
 // Layout takes the outside size (e.g., the window size) and returns the (logical) screen size.
@@ -294,6 +341,25 @@ func (g *EbitenGame) Draw(screen *ebiten.Image) {
 // For more detailed explanations, see https://github.com/hajimehoshi/ebiten/v2/wiki/Ebiten's-viewports.
 func (g *EbitenGame) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return screenWidth, screenHeight
+}
+
+// Shortcuts returns a slice of strings, each representing a game shortcut.
+func (g *EbitenGame) Shortcuts() []string {
+	return []string{
+		"--- Game Shortcuts ---",
+		"H: Toggle Pause/Shortcuts",
+		"Q: Quit Game",
+		"S: Save Game",
+		"L: Load Game",
+		"Scroll: Adjust Music Volume",
+		"Space: Toggle Shaders",
+		"--- Developer Shortcuts ---",
+		"F1: Set State Early Game",
+		"F2: Set State Mid Game",
+		"F3: Set State End Game Ready",
+		"F4: Toggle Debug Auto-Clicker",
+		"F5: Cycle Debug Auto-Clicker Speed",
+	}
 }
 
 func main() {
