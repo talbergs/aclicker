@@ -151,7 +151,7 @@ func (g *EbitenGame) handleMouseInput() {
 			g.lastMouseX = float32(cursorPoint.X) / float32(screenWidth)
 			g.lastMouseY = float32(cursorPoint.Y) / float32(screenHeight)
 			assets.ClickSFXPlayer.Rewind()
-			assets.ClickSFXPlayer.Play()
+			// assets.ClickSFXPlayer.Play()
 			return
 		}
 
@@ -160,10 +160,10 @@ func (g *EbitenGame) handleMouseInput() {
 			if err := g.state.PurchaseUpgrade(clickedUpgradeID); err != nil {
 				log.Printf("Error purchasing upgrade %s: %v", clickedUpgradeID, err)
 				assets.ErrorSFXPlayer.Rewind()
-				assets.ErrorSFXPlayer.Play()
+				// assets.ErrorSFXPlayer.Play()
 			} else {
 				assets.UpgradeSFXPlayer.Rewind()
-				assets.UpgradeSFXPlayer.Play()
+				// assets.UpgradeSFXPlayer.Play()
 			}
 			return
 		}	}
@@ -375,7 +375,7 @@ func main() {
 
 	// Start background music
 	assets.HealthyMusicPlayer.SetVolume(0.5) // Ensure initial volume
-	assets.HealthyMusicPlayer.Play()
+	// assets.HealthyMusicPlayer.Play()
 
 	assets.MelancholicMusicPlayer.SetVolume(0.0) // Start muted
 
