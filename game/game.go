@@ -15,10 +15,22 @@ import (
 // osExit is a package-level variable that can be mocked for testing os.Exit
 var OsExit = os.Exit
 
-const (
-	InitialRockHealth = 10000000
-	saveFile          = "save.json"
-)
+const InitialRockHealth = 10000000
+var SaveFile = "save.json" // Exported for testing
+
+// Save serializes the game state to a file.
+func (g *Game) Save() error {
+	return g.SaveToFile(SaveFile)
+}
+
+// SaveToFile serializes the game state to the specified file path.
+func (g *Game) SaveToFile(path string) error {
+	data, err := json.MarshalIndent(g, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0644)
+}
 
 // Rock represents the entity that is clicked.
 type Rock struct {
@@ -45,6 +57,7 @@ type Game struct {
 	EndGameChoicePending bool
 	GameOver             bool
 	GameWon              bool
+	ShouldExit           bool // New field to signal game termination
 }
 
 // NewGame creates a new game state with initial values.
@@ -74,6 +87,7 @@ func NewGame() *Game {
 		EndGameChoicePending: false,
 		GameOver:             false,
 		GameWon:              false,
+		ShouldExit:           false, // Initialize ShouldExit to false
 	}
 	g.Dispatcher.Register("Click", g.ApplyClickEvent)
 	g.Dispatcher.Register("UpgradePurchased", g.ApplyUpgradePurchasedEvent)
@@ -141,18 +155,16 @@ func (g *Game) ReplayEvents(evs []events.Event) {
 
 
 
-// Save serializes the game state to a file.
-func (g *Game) Save() error {
-	data, err := json.MarshalIndent(g, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(saveFile, data, 0644)
-}
+
 
 // Load deserializes the game state from a file.
 func (g *Game) Load() error {
-	data, err := os.ReadFile(saveFile)
+	return g.LoadFromFile(SaveFile)
+}
+
+// LoadFromFile deserializes the game state from the specified file path.
+func (g *Game) LoadFromFile(path string) error {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -190,6 +202,7 @@ func LoadGameFromEvents(es eventstore.EventStore) (*Game, *errors.GameError) {
 		EndGameChoicePending: false,
 		GameOver:             false,
 		GameWon:              false,
+		ShouldExit:           false, // Initialize ShouldExit to false
 	}
 	g.Upgrades.Init() // Initialize upgrades
 	g.Dispatcher.Register("Click", g.ApplyClickEvent)
@@ -221,7 +234,7 @@ func (g *Game) TakeHeart() {
 	g.RockMessageTimer = -1.0 // Display indefinitely
 	g.GameOver = true
 	// In a real game, you might show a final screen before exiting.
-	OsExit(0)
+	g.ShouldExit = true // Signal main loop to terminate
 }
 
 // LetRest implements the "Good Ending" logic.
@@ -235,7 +248,7 @@ func (g *Game) LetRest() {
 		log.Printf("Error saving game after winning: %v", err)
 	}
 	// In a real game, you might show a final screen before exiting.
-	OsExit(0)
+	g.ShouldExit = true // Signal main loop to terminate
 }
 
 // SetStateEarlyGame sets the game state to an early game scenario.

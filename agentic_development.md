@@ -11,3 +11,4 @@ Do this checklist:
 - argument the problem and analyse for it's causes
 
 [ ] show user the short report if no issues found or a detailed proposal with arguments
+[ ] if issues found, show additional boildown of top most severe causes

@@ -25,5 +25,6 @@
   ],
   "EndGameChoicePending": true,
   "GameOver": false,
-  "GameWon": false
+  "GameWon": false,
+  "ShouldExit": false
 }
