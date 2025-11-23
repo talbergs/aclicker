@@ -21,6 +21,26 @@ const (
 	screenHeight = 600
 )
 
+// Debug holds the game state for debugging purposes.
+type Debug struct {
+	state *game.Game
+}
+
+// NewDebug creates a new Debug instance.
+func NewDebug(state *game.Game) *Debug {
+	return &Debug{state: state}
+}
+
+// UpdateDebugAutoClicker updates the debug auto-clicker.
+func (d *Debug) UpdateDebugAutoClicker() {
+	// TODO: Implement auto-clicker logic
+}
+
+// HandleDeveloperKeybinds handles developer keybinds.
+func (d *Debug) HandleDeveloperKeybinds() {
+	// TODO: Implement developer keybinds
+}
+
 // EbitenGame implements ebiten.Game interface.
 type EbitenGame struct {
 	state             *game.Game
@@ -35,11 +55,11 @@ type EbitenGame struct {
 	lastMouseX        float32
 	lastMouseY        float32
 	clickSpeed        float32
-		lastClickPos      image.Point
-		debug             *Debug // New field for debug functionality
-		IsPaused          bool   // New field to track if the game is paused
-		ShowShortcuts     bool   // New field to track if shortcuts are displayed
-	}
+	lastClickPos      image.Point
+	debug             *Debug // New field for debug functionality
+	IsPaused          bool   // New field to track if the game is paused
+	ShowShortcuts     bool   // New field to track if shortcuts are displayed
+}
 
 // Update proceeds the game state.
 // Update is called every tick (1/60 second).

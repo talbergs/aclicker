@@ -1,8 +1,6 @@
 package game
 
 import (
-	"fmt"
-	"clicker2/game/events"
 	"clicker2/game/errors" // Import the new errors package
 )
 
@@ -150,41 +148,5 @@ func (um *UpgradeManager) GetAllUpgrades() []*Upgrade {
 	return upgrades
 }
 
-// PurchaseUpgrade attempts to purchase an upgrade for the player.
-func (g *Game) PurchaseUpgrade(id string) *errors.GameError {
-	u, err := g.Upgrades.GetUpgrade(id)
-	if err != nil {
-		return err // GetUpgrade already returns *errors.GameError
-	}
 
-	currentLevel := g.Upgrades.GetPlayerUpgradeLevel(id)
-	if currentLevel >= u.MaxLevel {
-		return errors.NewGameError(errors.ErrUpgradeMaxLevel)
-	}
-
-	cost := u.Cost(currentLevel)
-	if g.ThePlayer.Dust < cost {
-		return errors.NewGameError(errors.ErrInsufficientDust)
-	}
-
-	oldDust := g.ThePlayer.Dust // Capture old dust before deduction
-	// Deduct cost and apply effect
-	g.ThePlayer.Dust -= cost
-	u.ApplyEffect(g)
-
-	// Increment level
-	g.Upgrades.PlayerUpgrades[id]++
-
-	fmt.Printf("Player purchased upgrade: %s, New Level: %d\n", id, g.Upgrades.PlayerUpgrades[id])
-
-	// Dispatch event
-	g.Dispatcher.Dispatch(&events.UpgradePurchasedEvent{
-		PlayerID: "player1", // Placeholder
-		UpgradeID: id,
-		NewLevel: g.Upgrades.PlayerUpgrades[id],
-		OldDust: oldDust, // Need to capture old dust before deduction
-		NewDust: g.ThePlayer.Dust,
-	})
-	return nil
-}
 

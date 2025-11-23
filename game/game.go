@@ -146,6 +146,35 @@ func (g *Game) ApplyUpgradePurchasedEvent(event events.Event) {
 	}
 }
 
+// PurchaseUpgrade handles the logic for purchasing an upgrade.
+func (g *Game) PurchaseUpgrade(upgradeID string) *errors.GameError {
+	upgrade, err := g.Upgrades.GetUpgrade(upgradeID)
+	if err != nil {
+		return err
+	}
+
+	if g.Upgrades.PlayerUpgrades[upgradeID] >= upgrade.MaxLevel {
+		return errors.NewGameError(errors.ErrUpgradeMaxLevel, "upgrade at max level")
+	}
+
+	cost := upgrade.Cost(g.Upgrades.PlayerUpgrades[upgradeID])
+	if g.ThePlayer.Dust < cost {
+		return errors.NewGameError(errors.ErrInsufficientDust, "not enough dust to purchase upgrade")
+	}
+
+	g.ThePlayer.Dust -= cost
+	g.Upgrades.PlayerUpgrades[upgradeID]++
+	upgrade.ApplyEffect(g)
+
+	g.Dispatcher.Dispatch(&events.UpgradePurchasedEvent{
+		UpgradeID: upgradeID,
+		NewLevel:  g.Upgrades.PlayerUpgrades[upgradeID],
+		NewDust:   g.ThePlayer.Dust,
+	})
+
+	return nil
+}
+
 // ReplayEvents takes a slice of events and dispatches them to reconstruct the game state.
 func (g *Game) ReplayEvents(evs []events.Event) {
 	for _, event := range evs {
