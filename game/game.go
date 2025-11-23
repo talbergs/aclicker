@@ -91,6 +91,8 @@ func NewGame() *Game {
 	}
 	g.Dispatcher.Register("Click", g.ApplyClickEvent)
 	g.Dispatcher.Register("UpgradePurchased", g.ApplyUpgradePurchasedEvent)
+	g.Dispatcher.Register("HeartTaken", g.ApplyHeartTaken)
+	g.Dispatcher.Register("MountainRested", g.ApplyMountainRested)
 	return g
 }
 
@@ -143,6 +145,35 @@ func (g *Game) ApplyUpgradePurchasedEvent(event events.Event) {
 			return
 		}
 		upgrade.ReconstructEffect(g, e.NewLevel)
+	}
+}
+
+// ApplyHeartTaken applies the state changes from a HeartTakenEvent.
+func (g *Game) ApplyHeartTaken(event events.Event) {
+	if _, ok := event.(*events.HeartTakenEvent); ok {
+		log.Println("Bad Ending: You took the Heart of the Mountain.")
+		g.TheRock.Health = 0 // Shatter the rock
+		g.CurrentRockMessage = "The mountain is no more. You are alone with your dust."
+		g.RockMessageTimer = -1.0 // Display indefinitely
+		g.GameOver = true
+		// In a real game, you might show a final screen before exiting.
+		g.ShouldExit = true // Signal main loop to terminate
+	}
+}
+
+// ApplyMountainRested applies the state changes from a MountainRestedEvent.
+func (g *Game) ApplyMountainRested(event events.Event) {
+	if _, ok := event.(*events.MountainRestedEvent); ok {
+		log.Println("Good Ending: You let the Heart of the Mountain rest.")
+		g.CurrentRockMessage = "The rock is at peace. You have won."
+		g.RockMessageTimer = -1.0 // Display indefinitely
+		g.GameWon = true
+		// Save the game in its "won" state
+		if err := g.Save(); err != nil {
+			log.Printf("Error saving game after winning: %v", err)
+		}
+		// In a real game, you might show a final screen before exiting.
+		g.ShouldExit = true // Signal main loop to terminate
 	}
 }
 
@@ -236,6 +267,8 @@ func LoadGameFromEvents(es eventstore.EventStore) (*Game, *errors.GameError) {
 	g.Upgrades.Init() // Initialize upgrades
 	g.Dispatcher.Register("Click", g.ApplyClickEvent)
 	g.Dispatcher.Register("UpgradePurchased", g.ApplyUpgradePurchasedEvent)
+	g.Dispatcher.Register("HeartTaken", g.ApplyHeartTaken)
+	g.Dispatcher.Register("MountainRested", g.ApplyMountainRested)
 
 	// Load all events from the event store
 	loadedEvents, err := es.LoadEvents()
@@ -257,27 +290,16 @@ func LoadGameFromEvents(es eventstore.EventStore) (*Game, *errors.GameError) {
 
 // TakeHeart implements the "Bad Ending" logic.
 func (g *Game) TakeHeart() {
-	log.Println("Bad Ending: You took the Heart of the Mountain.")
-	g.TheRock.Health = 0 // Shatter the rock
-	g.CurrentRockMessage = "The mountain is no more. You are alone with your dust."
-	g.RockMessageTimer = -1.0 // Display indefinitely
-	g.GameOver = true
-	// In a real game, you might show a final screen before exiting.
-	g.ShouldExit = true // Signal main loop to terminate
+	g.Dispatcher.Dispatch(&events.HeartTakenEvent{
+		PlayerID: "player1", // Placeholder
+	})
 }
 
 // LetRest implements the "Good Ending" logic.
 func (g *Game) LetRest() {
-	log.Println("Good Ending: You let the Heart of the Mountain rest.")
-	g.CurrentRockMessage = "The rock is at peace. You have won."
-	g.RockMessageTimer = -1.0 // Display indefinitely
-	g.GameWon = true
-	// Save the game in its "won" state
-	if err := g.Save(); err != nil {
-		log.Printf("Error saving game after winning: %v", err)
-	}
-	// In a real game, you might show a final screen before exiting.
-	g.ShouldExit = true // Signal main loop to terminate
+	g.Dispatcher.Dispatch(&events.MountainRestedEvent{
+		PlayerID: "player1", // Placeholder
+	})
 }
 
 // SetStateEarlyGame sets the game state to an early game scenario.

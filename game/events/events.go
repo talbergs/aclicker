@@ -53,6 +53,26 @@ func (e *ClickEvent) EventType() string {
 	return "Click"
 }
 
+// HeartTakenEvent is dispatched when the player takes the heart of the mountain.
+type HeartTakenEvent struct {
+	PlayerID string
+}
+
+// EventType returns the type of the HeartTakenEvent.
+func (e *HeartTakenEvent) EventType() string {
+	return "HeartTaken"
+}
+
+// MountainRestedEvent is dispatched when the player lets the mountain rest.
+type MountainRestedEvent struct {
+	PlayerID string
+}
+
+// EventType returns the type of the MountainRestedEvent.
+func (e *MountainRestedEvent) EventType() string {
+	return "MountainRested"
+}
+
 // EventHandler is a function that handles a specific event.
 type EventHandler func(event Event)
 
